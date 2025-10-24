@@ -18,8 +18,8 @@ def input (key):
       new = Button(color=color.white, model='cube', position=box.position + mouse.normal,
               texture='grass.png', parent=scene, origin_y=0.5)
      boxes.append(new)
-if key == 'right mouse down':
-        boxes.remove(box)
-        destroy(box)
+   if key == 'right mouse down':
+       boxes.remove(box)
+       destroy(box)
 
 app.run()
