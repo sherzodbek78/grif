@@ -1,55 +1,30 @@
-import pygame
-import sys
+from ursina import *
 
-# Pygame'ni ishga tushiramiz
-pygame.init()
+app = Ursina()
 
-# Oyna o'lchami
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Oddiy Pygame Sahna")
+# Sahna fonini o'rnatish
+window.color = color.rgb(0, 200, 255)
 
-# Ranglar
-WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
+# Zamin
+ground = Entity(model='plane', scale=(10,1,10), color=color.green, collider='box')
 
-# Belgi (player) parametrlari
-player_size = 50
-player_x = WIDTH // 2
-player_y = HEIGHT // 2
-player_speed = 5
+# Kub (o'yinchi)
+player = Entity(model='cube', color=color.orange, scale=(1,1,1), position=(0,0.5,0), collider='box')
 
-# O'yin sikli
-clock = pygame.time.Clock()
-running = True
+# Kamera sozlamasi
+camera.position = (0, 10, -20)
+camera.rotation_x = 30
 
-while running:
-    clock.tick(60)  # FPS: 60
+# Harakat funksiyasi
+def update():
+    speed = 5 * time.dt
+    if held_keys['w']:
+        player.z -= speed
+    if held_keys['s']:
+        player.z += speed
+    if held_keys['a']:
+        player.x -= speed
+    if held_keys['d']:
+        player.x += speed
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-    # Tugmalarni tekshirish
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        player_x -= player_speed
-    if keys[pygame.K_RIGHT]:
-        player_x += player_speed
-    if keys[pygame.K_UP]:
-        player_y -= player_speed
-    if keys[pygame.K_DOWN]:
-        player_y += player_speed
-
-    # Ekranni tozalash
-    screen.fill(WHITE)
-
-    # Belgini chizish
-    pygame.draw.rect(screen, GREEN, (player_x, player_y, player_size, player_size))
-
-    # Yangilash
-    pygame.display.flip()
-
-# Chiqish
-pygame.quit()
-sys.exit()
+app.run()
