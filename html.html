@@ -3,214 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Head Ball: Ultra Stadium</title>
+    <title>Head Ball Mobile Frontend</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial Black', sans-serif; touch-action: none; }
-        canvas { display: block; }
-        .ui { position: absolute; top: 15px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 60px; pointer-events: none; z-index: 10; }
-        .score { font-size: 60px; color: white; text-shadow: 0 0 15px rgba(255,255,255,0.5); }
-        .timer { background: rgba(0,0,0,0.8); padding: 10px 30px; border-radius: 50px; border: 3px solid #00ff88; color: #00ff88; font-size: 28px; letter-spacing: 2px; }
-        .controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 50px; box-sizing: border-box; }
-        .btn { width: 90px; height: 90px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: white; user-select: none; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        #goal-msg { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); font-size: 120px; color: #fff; text-shadow: 0 0 30px #00ff88; pointer-events: none; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 100; font-style: italic; font-weight: 900; }
-        #goal-msg.active { transform: translate(-50%, -50%) scale(1); }
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Impact', sans-serif; touch-action: none; }
+        canvas { display: block; background: #87CEEB; margin: 0 auto; border-bottom: 20px solid #2b228b; }
+        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; pointer-events: none; }
+        .btn { width: 80px; height: 80px; background: rgba(255,255,255,0.3); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; color: white; pointer-events: auto; user-select: none; }
+        .score { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 48px; color: white; text-shadow: 2px 2px black; }
     </style>
 </head>
 <body>
 
-    <div class="ui">
-        <div class="score" id="p1Score" style="color: #ff3131">0</div>
-        <div class="timer" id="timerDisplay">02:00</div>
-        <div class="score" id="botScore" style="color: #00d2ff">0</div>
-    </div>
+    <div class="score" id="scoreBoard">0 : 0</div>
 
-    <div id="goal-msg">GOOOL!</div>
     <canvas id="gameCanvas"></canvas>
 
     <div class="controls">
-        <div style="display: flex; gap: 25px;">
-            <div class="btn" id="lBtn">←</div>
-            <div class="btn" id="rBtn">→</div>
+        <div style="display: flex; gap: 20px;">
+            <div class="btn" id="btnLeft">←</div>
+            <div class="btn" id="btnRight">→</div>
         </div>
-        <div class="btn" id="jBtn" style="border-color: #00ff88; color: #00ff88;">↑</div>
+        <div class="btn" id="btnJump">↑</div>
     </div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const goalMsg = document.getElementById('goal-msg');
-    
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.onresize = resize;
-    resize();
+    const scoreBoard = document.getElementById('scoreBoard');
 
-    let timeLeft = 120;
-    let shake = 0;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    let p1 = { x: 200, y: 0, r: 45, dy: 0, dx: 0, score: 0, jumping: false, color: '#ff3131' };
-    let bot = { x: canvas.width - 250, y: 0, r: 45, dy: 0, dx: 0, score: 0, jumping: false, color: '#00d2ff' };
-    let ball = { x: canvas.width/2, y: 300, r: 20, dx: 0, dy: 0, rotate: 0 };
+    const gravity = 0.8;
+    const groundHeight = 20;
 
-    let keys = { l: false, r: false, j: false };
+    let p1 = { x: 100, y: 0, w: 60, h: 60, color: 'red', dy: 0, dx: 0, score: 0, jumping: false };
+    let bot = { x: canvas.width - 160, y: 0, w: 60, h: 60, color: 'blue', dy: 0, dx: 0, score: 0, jumping: false };
+    let ball = { x: canvas.width / 2, y: canvas.height / 2, r: 15, dx: 0, dy: 0 };
 
-    setInterval(() => { if(timeLeft > 0) timeLeft--; updateClock(); }, 1000);
-    function updateClock() {
-        let m = Math.floor(timeLeft/60), s = timeLeft%60;
-        document.getElementById('timerDisplay').innerText = `${m}:${s < 10 ? '0'+s : s}`;
-    }
+    // Boshqaruv holati
+    let keys = { left: false, right: false, jump: false };
 
-    const bind = (id, k) => {
-        const el = document.getElementById(id);
-        el.onpointerdown = (e) => { e.preventDefault(); keys[k] = true; };
-        el.onpointerup = () => keys[k] = false;
+    // Sensorli boshqaruv
+    document.getElementById('btnLeft').ontouchstart = () => keys.left = true;
+    document.getElementById('btnLeft').ontouchend = () => keys.left = false;
+    document.getElementById('btnRight').ontouchstart = () => keys.right = true;
+    document.getElementById('btnRight').ontouchend = () => keys.right = false;
+    document.getElementById('btnJump').ontouchstart = () => keys.jump = true;
+    document.getElementById('btnJump').ontouchend = () => keys.jump = false;
+
+    // Klaviatura boshqaruv
+    window.onkeydown = (e) => {
+        if(e.key === 'a' || e.key === 'ArrowLeft') keys.left = true;
+        if(e.key === 'd' || e.key === 'ArrowRight') keys.right = true;
+        if(e.key === 'w' || e.key === 'ArrowUp') keys.jump = true;
     };
-    bind('lBtn', 'l'); bind('rBtn', 'r'); bind('jBtn', 'j');
-
-    function drawStadium() {
-        const groundY = canvas.height * 0.7;
-        
-        // 1. Tomoshabinlar (70% - Zamonaviy effekt)
-        let skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
-        skyGrad.addColorStop(0, '#0a0e14');
-        skyGrad.addColorStop(1, '#1a202c');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, canvas.width, groundY);
-
-        for(let i=0; i<120; i++) {
-            ctx.fillStyle = ['#ff3131','#00d2ff','#00ff88'][i%3];
-            ctx.globalAlpha = 0.2;
-            ctx.beginPath();
-            ctx.arc((i*57)%canvas.width, (i*33)%groundY, 5, 0, 7);
-            ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-
-        // 2. Yashil Maydon (30% - Chim teksturasi bilan)
-        ctx.fillStyle = '#1e5128';
-        ctx.fillRect(0, groundY, canvas.width, canvas.height-groundY);
-        ctx.fillStyle = '#2d6a31';
-        for(let i=0; i<canvas.width; i+=100) ctx.fillRect(i, groundY, 50, canvas.height-groundY);
-        
-        // 3. Chiroyli Darvozalar (Neon dizayn)
-        const netW = 80; // Darvoza chuqurligi (uzaytirildi)
-        const netH = 180; // Darvoza balandligi
-
-        // Darvoza chizish funksiyasi
-        const drawGoal = (x, isLeft) => {
-            ctx.save();
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "white";
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 6;
-            
-            // Asosiy ustunlar
-            ctx.strokeRect(isLeft ? 0 : x - netW, groundY - netH, netW, netH);
-            
-            // To'r effekti
-            ctx.lineWidth = 1;
-            ctx.globalAlpha = 0.3;
-            for(let j=0; j<netW; j+=15) {
-                ctx.beginPath();
-                ctx.moveTo(isLeft ? j : x - j, groundY - netH);
-                ctx.lineTo(isLeft ? j : x - j, groundY);
-                ctx.stroke();
-            }
-            for(let j=0; j<netH; j+=15) {
-                ctx.beginPath();
-                ctx.moveTo(isLeft ? 0 : x - netW, groundY - j);
-                ctx.lineTo(isLeft ? netW : x, groundY - j);
-                ctx.stroke();
-            }
-            ctx.restore();
-        };
-
-        drawGoal(0, true);
-        drawGoal(canvas.width, false);
-    }
+    window.onkeyup = (e) => {
+        if(e.key === 'a' || e.key === 'ArrowLeft') keys.left = false;
+        if(e.key === 'd' || e.key === 'ArrowRight') keys.right = false;
+        if(e.key === 'w' || e.key === 'ArrowUp') keys.jump = false;
+    };
 
     function resetBall() {
-        shake = 25;
-        goalMsg.classList.add('active');
-        setTimeout(() => goalMsg.classList.remove('active'), 1000);
-        ball.x = canvas.width/2; ball.y = 200; ball.dx = 0; ball.dy = 0;
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.dx = 0; ball.dy = 0;
     }
 
     function update() {
-        const groundY = canvas.height * 0.7;
-        const netW = 80;
-        const netH = 180;
+        // P1 harakati
+        if (keys.left) p1.dx = -8;
+        else if (keys.right) p1.dx = 8;
+        else p1.dx = 0;
 
-        p1.dx = keys.l ? -11 : (keys.r ? 11 : 0);
-        if(keys.j && !p1.jumping) { p1.dy = -22; p1.jumping = true; }
+        if (keys.jump && !p1.jumping) {
+            p1.dy = -18;
+            p1.jumping = true;
+        }
 
-        // Bot Logic
-        bot.dx = (ball.x > bot.x) ? 8 : -8;
-        if(ball.y < bot.y - 120 && !bot.jumping) { bot.dy = -22; bot.jumping = true; }
+        // Bot AI (Soddalashtirilgan)
+        if (ball.x > bot.x + 20) bot.dx = 6;
+        else if (ball.x < bot.x - 20) bot.dx = -6;
+        if (ball.y < bot.y - 100 && !bot.jumping) { bot.dy = -18; bot.jumping = true; }
 
+        // Fizika qo'llash
         [p1, bot].forEach(p => {
-            p.dy += 1.1; p.y += p.dy; p.x += p.dx;
-            if(p.y > groundY - p.r) { p.y = groundY - p.r; p.dy = 0; p.jumping = false; }
-            p.x = Math.max(p.r, Math.min(canvas.width - p.r, p.x));
+            p.dy += gravity;
+            p.y += p.dy;
+            p.x += p.dx;
+            if (p.y > canvas.height - groundHeight - p.h) {
+                p.y = canvas.height - groundHeight - p.h;
+                p.dy = 0;
+                p.jumping = false;
+            }
+            if (p.x < 0) p.x = 0;
+            if (p.x > canvas.width - p.w) p.x = canvas.width - p.w;
         });
 
-        ball.dy += 0.6; ball.x += ball.dx; ball.y += ball.dy;
-        ball.rotate += ball.dx * 0.1;
+        // To'p fizikasi
+        ball.dy += 0.4;
+        ball.x += ball.dx;
+        ball.y += ball.dy;
 
-        if(ball.y > groundY - ball.r) { ball.y = groundY - ball.r; ball.dy *= -0.85; }
-        if(ball.x < ball.r || ball.x > canvas.width - ball.r) ball.dx *= -0.6;
+        if (ball.y > canvas.height - groundHeight - ball.r) {
+            ball.y = canvas.height - groundHeight - ball.r;
+            ball.dy *= -0.7;
+        }
+        if (ball.x < 0 || ball.x > canvas.width) ball.dx *= -1;
 
-        // Collision
+        // To'qnashuv (Player vs Ball)
         [p1, bot].forEach(p => {
-            let dx = ball.x - p.x, dy = ball.y - p.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-            if(dist < ball.r + p.r) {
-                ball.dy = -16;
-                ball.dx = (ball.x - p.x) * 0.7;
+            if (ball.x + ball.r > p.x && ball.x - ball.r < p.x + p.w &&
+                ball.y + ball.r > p.y && ball.y - ball.r < p.y + p.h) {
+                ball.dy = -12;
+                ball.dx = (ball.x - (p.x + p.w / 2)) * 0.5;
             }
         });
 
-        // GOL ANIQLASH (Kengaytirilgan darvoza ichiga kirsa)
-        if(ball.y > groundY - netH) {
-            if(ball.x < netW) { bot.score++; resetBall(); }
-            if(ball.x > canvas.width - netW) { p1.score++; resetBall(); }
-        }
+        // Gollar
+        if (ball.x < 10 && ball.y > canvas.height - 150) { bot.score++; resetBall(); }
+        if (ball.x > canvas.width - 10 && ball.y > canvas.height - 150) { p1.score++; resetBall(); }
 
-        if(shake > 0) shake--;
+        scoreBoard.innerText = `${p1.score} : ${bot.score}`;
     }
 
-    function loop() {
-        ctx.save();
-        if(shake > 0) ctx.translate(Math.random()*shake, Math.random()*shake);
-        ctx.clearRect(0,0,canvas.width, canvas.height);
-        
-        drawStadium();
+    function drawFans() {
+        ctx.fillStyle = "#555";
+        ctx.fillRect(0, 200, canvas.width, canvas.height - 200);
+        for (let y = 220; y < canvas.height - 150; y += 40) {
+            for (let x = 20; x < canvas.width; x += 40) {
+                ctx.fillStyle = `hsl(${(x+y)%360}, 50%, 50%)`;
+                ctx.beginPath();
+                ctx.arc(x, y, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
 
-        [p1, bot].forEach(p => {
-            ctx.save();
-            ctx.shadowBlur = 20; ctx.shadowColor = p.color;
-            ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-            // Ko'zlar
-            ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(p.x + (p===p1?18:-18), p.y-12, 10, 0, 7); ctx.fill();
-            ctx.fillStyle = "black"; ctx.beginPath(); ctx.arc(p.x + (p===p1?22:-22), p.y-12, 5, 0, 7); ctx.fill();
-            ctx.restore();
-        });
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawFans();
 
-        ctx.save();
-        ctx.translate(ball.x, ball.y); ctx.rotate(ball.rotate);
-        ctx.shadowBlur = 10; ctx.shadowColor = "white";
-        ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(0,0,ball.r,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle = "black"; ctx.lineWidth = 2; ctx.stroke();
-        ctx.restore();
+        // Darvozalar
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, canvas.height - 150, 10, 130);
+        ctx.fillRect(canvas.width - 10, canvas.height - 150, 10, 130);
+
+        // O'yinchilar
+        ctx.fillStyle = p1.color;
+        ctx.beginPath(); ctx.ellipse(p1.x + 30, p1.y + 30, 30, 30, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = bot.color;
+        ctx.beginPath(); ctx.ellipse(bot.x + 30, bot.y + 30, 30, 30, 0, 0, Math.PI * 2); ctx.fill();
+
+        // To'p
+        ctx.fillStyle = "white";
+        ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill();
+        ctx.stroke();
 
         update();
-        ctx.restore();
-        requestAnimationFrame(loop);
+        requestAnimationFrame(draw);
     }
-    loop();
+
+    draw();
 </script>
 </body>
 </html>
