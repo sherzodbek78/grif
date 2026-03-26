@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<input type = "text" placeholder="matn kititiyng">
+<button onclick="add()">qoshish</button>
+<ul id="list">
+
+</ul>
+
+<script>
+    const input = document.querySelector('input');
+    const list = document.querySelector('ul');
+
+    function add(){
+        const li = document.createElement('li')
+        li.innerText = input.value;
+        list.append(li);
+        input.value = ''
+        li.append(deleteBtn)
+    }
+
+</script>
+</body>
+</html>
