@@ -1,22 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAYT</title>
-    <style> 
-    body{
-        background-color: green;
-    }
-        h1{
-         color: blue;
-        }
-    </style>
+    <title>Soat</title>
+    <style>
+      body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #222;
+    color: white;
+    padding: 20px;
+}
 
-    <h1> login<input type="login" name="login" id=""></h1>
-    <h1> pasword<input type="passsword" name="login" id=""></h1>
+.container {
+    max-width: 400px;
+    margin: auto;
+    padding: 20px;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+p {
+    font-size: 48px;
+    font-weight: bold;
+}
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h1>Joriy vaqt</h1>
+        <p id="clock">00:00:00</p>
+    </div>
+    <script>function updateClock() {
+    let now = new Date();
+    let hours = now.getHours().toString().padStart(2, "0");
+    let minutes = now.getMinutes().toString().padStart(2, "0");
+    let seconds = now.getSeconds().toString().padStart(2, "0");
     
+    document.getElementById("clock").textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+setInterval(updateClock, 1000);
+
+updateClock();</script>
 </body>
 </html>
